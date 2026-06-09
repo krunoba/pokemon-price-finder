@@ -76,6 +76,16 @@ def check_password() -> bool:
     return False
 
 
+def fix_orientation(image_bytes: bytes) -> bytes:
+    from PIL import Image, ImageOps
+    import io
+    img = Image.open(io.BytesIO(image_bytes))
+    img = ImageOps.exif_transpose(img)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=90)
+    return buf.getvalue()
+
+
 def crop_bottom_right(image_bytes: bytes) -> bytes:
     """Schneidet untere rechte Ecke aus — dort steht die Kartennummer."""
     from PIL import Image
@@ -443,10 +453,20 @@ if img_file is not None:
         else:
             if valid_cards:
                 st.caption(f"ℹ️ Kein englisches Äquivalent mit Nr. {detected_num} gefunden — Tavily-Preise oben gelten für die japanische Version.")
-            st.image(img_bytes, width=200)
+            col_img, col_info = st.columns([1, 2])
+            with col_img:
+                st.image(fix_orientation(img_bytes), use_container_width=True)
+            with col_info:
+                st.markdown(f"**{detected_name}**")
+                st.caption(f"Nr. {detected_num}")
         # Kein englisches Substitut mit anderer Nummer zeigen
     elif not valid_cards:
-        st.image(img_bytes, width=200)
+        col_img, col_info = st.columns([1, 2])
+        with col_img:
+            st.image(fix_orientation(img_bytes), use_container_width=True)
+        with col_info:
+            st.markdown(f"**{detected_name}**")
+            st.caption(card_info.get("set_name") or "")
         if not tavily_result:
             st.warning(f"Keine Karte mit Name '{detected_name}' in der Datenbank gefunden.")
     elif len(valid_cards) > 1:
