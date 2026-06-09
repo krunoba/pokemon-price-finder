@@ -138,18 +138,18 @@ Return ONLY JSON. null only for genuinely unreadable values.""")
         raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
     result = json.loads(raw)
 
-    # Haiku für Kartennummer-Crop falls nicht gelesen
-    if not result.get("card_number"):
-        try:
-            crop_bytes = crop_bottom_right(image_bytes)
-            num_raw = _ask_vision(client, "claude-haiku-4-5-20251001", crop_bytes, "image/jpeg",
-                "Pokemon card bottom corner. Read ONLY the card number (format XX/YYY). Return ONLY the number or null.")
-            num_raw = num_raw.strip().strip('"')
-            if num_raw and num_raw != "null" and "/" in num_raw:
-                result["card_number"] = num_raw
-                result["set_number"] = num_raw.split("/")[0]
-        except Exception:
-            pass
+    # Haiku liest immer die Kartennummer aus dem Crop — präziser als Vollbild
+    try:
+        crop_bytes = crop_bottom_right(image_bytes)
+        num_raw = _ask_vision(client, "claude-haiku-4-5-20251001", crop_bytes, "image/jpeg",
+            "Pokemon card bottom-left corner. Read ONLY the card number (format like 165/181 or 53/214). "
+            "Look carefully — common errors: 1↔7, 6↔8, 5↔3. Return ONLY the number, nothing else.")
+        num_raw = num_raw.strip().strip('"')
+        if num_raw and num_raw.lower() != "null" and "/" in num_raw:
+            result["card_number"] = num_raw
+            result["set_number"] = num_raw.split("/")[0]
+    except Exception:
+        pass
 
     return result
 
@@ -355,7 +355,7 @@ if not check_password():
 
 st.title("🃏 Pokemon Price Finder")
 
-tab_cam, tab_upload = st.tabs(["📷 Kamera (PC)", "📱 iPhone / Upload"])
+tab_upload, tab_cam = st.tabs(["📱 iPhone / Upload", "📷 Kamera (PC)"])
 
 img_file = None
 
@@ -470,8 +470,12 @@ if img_file is not None:
         if not tavily_result:
             st.warning(f"Keine Karte mit Name '{detected_name}' in der Datenbank gefunden.")
     elif len(valid_cards) > 1:
-        st.markdown(f"<p class='warn'>⚠️ {len(valid_cards)} Varianten mit diesem Namen — Kartennummer prüfen.</p>", unsafe_allow_html=True)
-        for card in valid_cards:
-            render_price_card(card, card_info)
+        exact = [c for c in valid_cards if c.get("number") == detected_num]
+        if exact:
+            render_price_card(exact[0], card_info)
+        else:
+            st.markdown(f"<p class='warn'>⚠️ {len(valid_cards)} Varianten — Nr. {detected_num} nicht eindeutig zuordenbar. Alle Varianten:</p>", unsafe_allow_html=True)
+            for card in valid_cards:
+                render_price_card(card, card_info)
     else:
         render_price_card(valid_cards[0], card_info)
