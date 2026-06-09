@@ -123,7 +123,7 @@ CRITICAL: The suffix after the Pokemon name is crucial and must be read precisel
 {
   "name": "EXACT name as printed, e.g. Charizard VSTAR or Gengar & Mimikyu-GX",
   "set_name": "set name or null",
-  "card_number": "e.g. 212/172 — read from bottom of card",
+  "card_number": "EXACTLY as printed e.g. 056/094 — read digit by digit, do NOT confuse 0/8, 5/6, 1/7",
   "set_number": "number before slash or null",
   "rarity": "exact rarity or null",
   "condition_estimate": "Near Mint/Lightly Played/Moderately Played/Heavily Played/Damaged",
@@ -138,18 +138,19 @@ Return ONLY JSON. null only for genuinely unreadable values.""")
         raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
     result = json.loads(raw)
 
-    # Haiku liest immer die Kartennummer aus dem Crop — präziser als Vollbild
-    try:
-        crop_bytes = crop_bottom_right(image_bytes)
-        num_raw = _ask_vision(client, "claude-haiku-4-5-20251001", crop_bytes, "image/jpeg",
-            "Pokemon card bottom-left corner. Read ONLY the card number (format like 165/181 or 53/214). "
-            "Look carefully — common errors: 1↔7, 6↔8, 5↔3. Return ONLY the number, nothing else.")
-        num_raw = num_raw.strip().strip('"')
-        if num_raw and num_raw.lower() != "null" and "/" in num_raw:
-            result["card_number"] = num_raw
-            result["set_number"] = num_raw.split("/")[0]
-    except Exception:
-        pass
+    # Haiku-Crop nur als Fallback wenn Sonnet keine Nummer gelesen hat
+    if not result.get("card_number"):
+        try:
+            crop_bytes = crop_bottom_right(image_bytes)
+            num_raw = _ask_vision(client, "claude-haiku-4-5-20251001", crop_bytes, "image/jpeg",
+                "Pokemon card bottom-left corner. Read ONLY the card number (e.g. 056/094 or 165/181). "
+                "Read each digit carefully. Return ONLY the number, nothing else.")
+            num_raw = num_raw.strip().strip('"')
+            if num_raw and num_raw.lower() != "null" and "/" in num_raw:
+                result["card_number"] = num_raw
+                result["set_number"] = num_raw.split("/")[0]
+        except Exception:
+            pass
 
     return result
 
