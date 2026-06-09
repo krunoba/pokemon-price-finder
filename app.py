@@ -166,14 +166,20 @@ def normalize_name(name: str) -> list[str]:
 
 
 def _api_get(headers, query, pageSize=10):
-    resp = requests.get(
-        "https://api.pokemontcg.io/v2/cards",
-        headers=headers,
-        params={"q": query, "select": "id,name,set,number,rarity,images,tcgplayer,cardmarket", "pageSize": pageSize},
-        timeout=15,
-    )
-    resp.raise_for_status()
-    return resp.json().get("data", [])
+    for attempt in range(3):
+        try:
+            resp = requests.get(
+                "https://api.pokemontcg.io/v2/cards",
+                headers=headers,
+                params={"q": query, "select": "id,name,set,number,rarity,images,tcgplayer,cardmarket", "pageSize": pageSize},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            return resp.json().get("data", [])
+        except requests.exceptions.Timeout:
+            if attempt == 2:
+                raise
+    return []
 
 
 def lookup_prices(card_info: dict) -> list[dict]:
