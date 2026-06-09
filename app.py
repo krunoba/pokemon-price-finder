@@ -356,22 +356,17 @@ if not check_password():
 
 st.title("🃏 Pokemon Price Finder")
 
-tab_upload, tab_cam = st.tabs(["📱 iPhone / Upload", "📷 Kamera (PC)"])
+if "upload_key" not in st.session_state:
+    st.session_state["upload_key"] = 0
 
-img_file = None
-
-with tab_cam:
-    img_file = st.camera_input("Karte vor die Kamera halten")
-
-with tab_upload:
-    st.caption("👆 'Browse files' tippen → iOS zeigt 'Foto aufnehmen' → Kamera öffnet sich")
-    uploaded = st.file_uploader(
-        "Kartenfoto",
-        type=["jpg", "jpeg", "png", "webp"],
-        label_visibility="collapsed",
-    )
-    if uploaded is not None:
-        img_file = uploaded
+st.caption("Foto aufnehmen oder aus Galerie wählen")
+img_file = st.file_uploader(
+    "Kartenfoto",
+    type=["jpg", "jpeg", "png", "webp"],
+    label_visibility="collapsed",
+    accept_multiple_files=False,
+    key=f"uploader_{st.session_state['upload_key']}",
+)
 
 if img_file is not None:
     img_bytes = img_file.getvalue()
@@ -480,3 +475,8 @@ if img_file is not None:
                 render_price_card(card, card_info)
     else:
         render_price_card(valid_cards[0], card_info)
+
+    st.divider()
+    if st.button("🔄 Neue Karte scannen"):
+        st.session_state["upload_key"] += 1
+        st.rerun()
