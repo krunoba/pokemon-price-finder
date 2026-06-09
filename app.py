@@ -14,6 +14,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# iOS Home Screen Icon (Pokéball SVG als apple-touch-icon)
+_pokeball_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<circle cx="50" cy="50" r="48" fill="white" stroke="#222" stroke-width="4"/>
+<path d="M2 50 A48 48 0 0 1 98 50" fill="#e53935"/>
+<rect x="2" y="46" width="96" height="8" fill="#222"/>
+<circle cx="50" cy="50" r="13" fill="white" stroke="#222" stroke-width="4"/>
+<circle cx="50" cy="50" r="6" fill="#e53935"/>
+</svg>"""
+_icon_b64 = base64.b64encode(_pokeball_svg.encode()).decode()
+st.markdown(
+    f'<link rel="apple-touch-icon" href="data:image/svg+xml;base64,{_icon_b64}">',
+    unsafe_allow_html=True,
+)
+
 # Mobile CSS
 st.markdown("""
 <style>
