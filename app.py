@@ -62,6 +62,20 @@ def get_api_key(key: str) -> str:
         return os.getenv(key, "")
 
 
+def check_password() -> bool:
+    if st.session_state.get("authenticated"):
+        return True
+    pwd = st.text_input("Passwort", type="password", key="pwd_input")
+    if st.button("Einloggen"):
+        correct = get_api_key("APP_PASSWORD")
+        if pwd == correct:
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Falsches Passwort")
+    return False
+
+
 def crop_bottom_right(image_bytes: bytes) -> bytes:
     """Schneidet untere rechte Ecke aus — dort steht die Kartennummer."""
     from PIL import Image
@@ -325,6 +339,9 @@ def render_price_card(card: dict, card_info: dict):
 
 
 # ── UI ──────────────────────────────────────────────────────────────────────
+
+if not check_password():
+    st.stop()
 
 st.title("🃏 Pokemon Price Finder")
 
