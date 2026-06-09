@@ -436,6 +436,10 @@ if img_file is not None:
     detected_name = card_info.get("name") or ""
     detected_num = (card_info.get("set_number") or "").strip()
 
+    def norm_num(n):
+        try: return str(int(n))
+        except: return (n or "").strip()
+
     # Karten validieren: nur exakter Namens-Match anzeigen
     def name_matches(card):
         api_name = (card.get("name") or "").lower()
@@ -448,7 +452,7 @@ if img_file is not None:
 
     if is_japanese:
         # Für JP-Karten: nur englische Karten mit gleichem Namen UND gleicher Nummer
-        exact = [c for c in valid_cards if c.get("number") == detected_num]
+        exact = [c for c in valid_cards if norm_num(c.get("number")) == norm_num(detected_num)]
         if exact:
             st.markdown("**Englische Version (gleiche Kartennummer)**")
             render_price_card(exact[0], card_info)
@@ -472,7 +476,7 @@ if img_file is not None:
         if not tavily_result:
             st.warning(f"Keine Karte mit Name '{detected_name}' in der Datenbank gefunden.")
     elif len(valid_cards) > 1:
-        exact = [c for c in valid_cards if c.get("number") == detected_num]
+        exact = [c for c in valid_cards if norm_num(c.get("number")) == norm_num(detected_num)]
         if exact:
             render_price_card(exact[0], card_info)
         else:
