@@ -200,30 +200,37 @@ def lookup_prices(card_info: dict) -> list[dict]:
     if is_japanese:
         set_name = ""
 
-    # Strategie 1: Name + Nummer
-    if set_num:
-        for name_variant in normalize_name(name):
-            cards = _api_get(headers, f'name:"{name_variant}" number:{set_num}')
-            if cards:
-                return cards
+    def _norm(n):
+        try: return str(int(n))
+        except: return (n or "").strip()
 
-    # Strategie 2: Name + Set (nur bei englischen Karten)
+    norm_set_num = _norm(set_num)
+
+    # Strategie 1: Name + Nummer (beide Schreibweisen)
+    if set_num:
+        for num_query in dict.fromkeys([set_num, norm_set_num]):
+            for name_variant in normalize_name(name):
+                cards = _api_get(headers, f'name:"{name_variant}" number:{num_query}')
+                if cards:
+                    return cards
+
+    # Strategie 2: Name + Set
     if set_name:
         for name_variant in normalize_name(name):
             cards = _api_get(headers, f'name:"{name_variant}" set.name:"{set_name}"')
             if cards:
-                if set_num:
-                    filtered = [c for c in cards if c.get("number") == set_num]
+                if norm_set_num:
+                    filtered = [c for c in cards if _norm(c.get("number")) == norm_set_num]
                     if filtered:
                         return filtered
                 return cards
 
-    # Strategie 3: Nur Name → beste Übereinstimmung zurückgeben
+    # Strategie 3: Nur Name
     for name_variant in normalize_name(name):
         cards = _api_get(headers, f'name:"{name_variant}"')
         if cards:
-            if set_num:
-                filtered = [c for c in cards if c.get("number") == set_num]
+            if norm_set_num:
+                filtered = [c for c in cards if _norm(c.get("number")) == norm_set_num]
                 if filtered:
                     return filtered
             return cards
