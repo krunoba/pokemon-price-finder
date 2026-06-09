@@ -440,10 +440,13 @@ if img_file is not None:
         if exact:
             st.markdown("**Englische Version (gleiche Kartennummer)**")
             render_price_card(exact[0], card_info)
-        elif valid_cards:
-            st.caption(f"ℹ️ Kein englisches Äquivalent mit Nr. {detected_num} gefunden — Tavily-Preise oben gelten für die japanische Version.")
+        else:
+            if valid_cards:
+                st.caption(f"ℹ️ Kein englisches Äquivalent mit Nr. {detected_num} gefunden — Tavily-Preise oben gelten für die japanische Version.")
+            st.image(img_bytes, width=200)
         # Kein englisches Substitut mit anderer Nummer zeigen
     elif not valid_cards:
+        st.image(img_bytes, width=200)
         if not tavily_result:
             st.warning(f"Keine Karte mit Name '{detected_name}' in der Datenbank gefunden.")
     elif len(valid_cards) > 1:
